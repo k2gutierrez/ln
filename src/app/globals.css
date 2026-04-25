@@ -24,3 +24,24 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* React Quill Alignment Classes for Public Pages */
+.ql-align-center { text-align: center; }
+.ql-align-right { text-align: right; }
+.ql-align-justify { text-align: justify; }
+
+/* Force Tailwind Prose to respect empty spaces (Enters) 
+  created by React Quill 
+*/
+.prose p:has(br:only-child),
+.prose p:empty {
+  min-height: 1.5rem;
+  margin-bottom: 1.5rem !important;
+}
+
+/* Force Tailwind Prose to respect empty spaces (Enters) */
+.prose p:has(br:only-child),
+.prose p:empty {
+  min-height: 1rem; /* Reducido de 1.5rem */
+  margin-bottom: 1rem !important; /* Reducido de 1.5rem */
+}
