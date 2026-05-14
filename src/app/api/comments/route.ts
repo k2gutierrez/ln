@@ -61,4 +61,4 @@ export async function POST(req: Request) {
     console.error("Error en la API de comentarios:", error);
     return NextResponse.json({ error: 'Error al procesar el comentario', details: error.message }, { status: 500 });
   }
-}
+} // test in production
