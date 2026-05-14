@@ -28,10 +28,9 @@ export default async function Home() {
   const { data: quoteData } = await supabase
     .from('daily_quotes')
     .select('text')
-    .eq('is_active', true)
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .single();
+    .order('created_at', { ascending: false }) // La más nueva primero
+    .limit(1) // Solo queremos una
+    .maybeSingle();
 
   // 2. Fetch: Últimos Artículos
   // Traemos los 5 artículos más recientes que estén publicados
