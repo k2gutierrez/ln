@@ -30,6 +30,8 @@ export default function CommentsSection({ articleId, isAdmin }: { articleId: str
       body: JSON.stringify({ article_id: articleId, user_name: name, content: text }),
     });
 
+    console.log(res)
+
     if (res.ok) {
       setText('');
       setName('');
