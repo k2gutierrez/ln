@@ -29,7 +29,7 @@ export default async function Home() {
   const { data: quoteData } = await supabase
     .from('daily_quotes')
     .select('text')
-    .order('created_at', { ascending: false })
+    .eq('is_active', true)
     .limit(1)
     .maybeSingle();
 
