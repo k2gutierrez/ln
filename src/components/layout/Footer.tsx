@@ -5,7 +5,7 @@ export default function Footer() {
     <footer className="bg-white border-t border-slate-100 py-12 mt-auto">
       <div className="max-w-6xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-4">
         <p className="text-sm text-slate-500">
-          © {currentYear} Laura Niebla. Todos los derechos reservados.
+          © {currentYear} ConIntención by Laura Niebla. Todos los derechos reservados.
         </p>
         
         {/* Enlaces a Redes (Estos serán dinámicos después) */}

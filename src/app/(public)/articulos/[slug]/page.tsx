@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
+import CommentsSection from '@/components/CommentsSection';
 
 // Soporte para Next.js 15 (params como Promesa)
 export default async function ArticlePage({
@@ -40,6 +41,10 @@ export default async function ArticlePage({
     day: 'numeric'
   });
 
+  // Al final del archivo page.tsx del slug
+  const { data: { session } } = await supabase.auth.getSession();
+  const isAdmin = !!session;
+
   return (
     <article className="min-h-screen bg-[#FDFDFD] py-16 md:py-24">
       <div className="max-w-3xl mx-auto px-6">
@@ -73,6 +78,7 @@ export default async function ArticlePage({
               src={article.image_url}
               alt={`Portada de: ${article.title}`}
               fill
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
               className="object-cover"
               priority
             />
@@ -109,7 +115,7 @@ export default async function ArticlePage({
                       src={author.avatar_url}
                       alt={author.full_name || 'Autora'}
                       fill
-
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                       className="rounded-full object-cover border-2 border-slate-50 shadow-sm"
                     />
                   </div>
@@ -135,6 +141,9 @@ export default async function ArticlePage({
           </div>
         )}
 
+      </div>
+      <div className="max-w-3xl mx-auto px-6">
+        <CommentsSection articleId={article.id} isAdmin={isAdmin} />
       </div>
     </article>
   );

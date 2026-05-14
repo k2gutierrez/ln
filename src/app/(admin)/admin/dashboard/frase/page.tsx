@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
 
 export default function DailyQuoteAdmin() {
+  const [id, setId] = useState('');
   const [text, setContent] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -25,6 +26,7 @@ export default function DailyQuoteAdmin() {
         .maybeSingle();
 
       if (data) {
+        setId(data.id)
         setContent(data.content || data.text || '');
       }
     } catch (err) {
@@ -39,11 +41,18 @@ export default function DailyQuoteAdmin() {
     setMessage(null);
 
     try {
+      const { data } = await supabase
+        .from('daily_quotes')
+        .update({ is_active: false })
+        .eq('id', id)
+        .select();
+
       // Usamos .upsert para que si existe la actualice y si no, la cree
       const { error } = await supabase
         .from('daily_quotes')
         .insert({ 
-          text, 
+          text,
+          is_active: true,
           created_at: new Date().toISOString() 
         });
 
@@ -56,6 +65,7 @@ export default function DailyQuoteAdmin() {
     } catch (err: any) {
       setMessage({ type: 'error', text: 'Error al guardar: ' + err.message });
     } finally {
+      await loadQuote();
       setSaving(false);
     }
   }
