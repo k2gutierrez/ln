@@ -23,6 +23,7 @@ const formatearFecha = (fechaString: string) => {
 };
 
 export default async function Home() {
+  
   // 1. Fetch: Frase del Día
   // Traemos la frase más reciente que esté marcada como 'is_active'
   const { data: quoteData } = await supabase
@@ -31,6 +32,8 @@ export default async function Home() {
     .order('created_at', { ascending: false }) // La más nueva primero
     .limit(1) // Solo queremos una
     .maybeSingle();
+
+    console.log(quoteData)
 
   // 2. Fetch: Últimos Artículos
   // Traemos los 5 artículos más recientes que estén publicados
