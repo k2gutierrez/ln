@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
 import ArticleCarousel from '@/components/ArticleCarousel';
 
@@ -24,7 +23,7 @@ const formatearFecha = (fechaString: string) => {
 };
 
 export default async function Home() {
-  
+
   // 1. Fetch: Frase del Día
   const { data: quoteData } = await supabase
     .from('daily_quotes')
@@ -32,6 +31,8 @@ export default async function Home() {
     .eq('is_active', true)
     .limit(1)
     .maybeSingle();
+  
+  const dailyQuote: String = quoteData?.text || '';
 
   // 2. Fetch: Últimos Artículos (Traemos los últimos 5 para el carrusel)
   const { data: articlesData } = await supabase
@@ -47,10 +48,10 @@ export default async function Home() {
     <div className="flex flex-col">
       
       {/* --- Sección: Frase del Día --- */}
-      {quoteData && (
+      {dailyQuote && (
         <div className="bg-slate-50 border-b border-slate-100 py-3 px-6 text-center">
           <p className="text-sm md:text-base text-slate-600 italic font-serif tracking-wide">
-            "{quoteData.text}"
+            "{dailyQuote}"
           </p>
         </div>
       )}
