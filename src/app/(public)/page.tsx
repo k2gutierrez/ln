@@ -22,6 +22,8 @@ const formatearFecha = (fechaString: string) => {
   return new Date(fechaString).toLocaleDateString('es-ES', opciones);
 };
 
+export const dynamic = 'force-dynamic';
+
 export default async function Home() {
 
   // 1. Fetch: Frase del Día
