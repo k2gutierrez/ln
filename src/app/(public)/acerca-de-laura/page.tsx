@@ -43,7 +43,7 @@ export default async function AboutPage() {
                   {fullName}
                 </h1>
                 <p className="text-sm font-bold uppercase tracking-widest text-slate-400 mb-8">
-                  Autora de ConIntención
+                  Autora de Con Intención
                 </p>
 
                 {/* Redes Sociales */}
