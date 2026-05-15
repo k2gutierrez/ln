@@ -24,6 +24,9 @@ export default function EditArticle() {
   const [imageUrl, setImageUrl] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  
+  // NUEVO ESTADO: Fecha de publicación
+  const [publishedAt, setPublishedAt] = useState('');
 
   // Configuración del Editor
   const quillModules = {
@@ -49,10 +52,17 @@ export default function EditArticle() {
         setTitle(data.title);
         setSlug(data.slug);
         setExcerpt(data.excerpt || '');
-        // Si el contenido no tiene etiquetas <p>, lo envolvemos para el editor
+        
         const initialContent = data.content?.includes('<p>') ? data.content : `<p>${data.content?.replace(/\n/g, '</p><p>')}</p>`;
         setContent(initialContent);
         setImageUrl(data.image_url || '');
+
+        // CARGAR LA FECHA: Convertimos de ISO a YYYY-MM-DD para el input de tipo date
+        if (data.published_at) {
+          setPublishedAt(new Date(data.published_at).toISOString().split('T')[0]);
+        } else {
+          setPublishedAt(new Date().toISOString().split('T')[0]);
+        }
       }
     } catch (err) {
       router.push('/admin/dashboard/articulos');
@@ -83,7 +93,13 @@ export default function EditArticle() {
       }
 
       await supabase.from('articles').update({
-        title, slug, excerpt, content: cleanContent, image_url: finalImageUrl,
+        title, 
+        slug, 
+        excerpt, 
+        content: cleanContent, 
+        image_url: finalImageUrl,
+        // GUARDAR LA FECHA: La regresamos a formato ISO para la base de datos
+        published_at: new Date(publishedAt).toISOString()
       }).eq('id', id);
 
       router.push('/admin/dashboard/articulos');
@@ -93,8 +109,6 @@ export default function EditArticle() {
       setSaving(false);
     }
   };
-
-  
 
   if (loading) return <div className="p-20 text-center animate-pulse">Cargando...</div>;
 
@@ -122,6 +136,18 @@ export default function EditArticle() {
           </div>
 
           <div className="lg:col-span-1 space-y-6">
+            
+            {/* NUEVA CARD: Fecha de Publicación */}
+            <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
+              <label className="block text-xs font-bold uppercase tracking-widest text-slate-400 mb-2">Fecha</label>
+              <input
+                type="date"
+                value={publishedAt}
+                onChange={(e) => setPublishedAt(e.target.value)}
+                className="w-full text-sm text-slate-700 font-medium border-slate-200 rounded-xl focus:ring-slate-900 focus:border-slate-900 p-3 bg-slate-50"
+              />
+            </div>
+
             <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
               <label className="block text-xs font-bold uppercase text-slate-400 mb-4">Portada</label>
               <div className="relative h-36 w-full rounded-2xl overflow-hidden bg-slate-50 border border-dashed border-slate-200">
@@ -129,6 +155,7 @@ export default function EditArticle() {
                 <input type="file" accept="image/*" onChange={handleImageChange} className="absolute inset-0 opacity-0 cursor-pointer" />
               </div>
             </div>
+            
             <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
               <label className="block text-xs font-bold uppercase text-slate-400 mb-2">Extracto</label>
               <textarea rows={5} value={excerpt} onChange={(e) => setExcerpt(e.target.value)} className="w-full text-sm text-slate-600 border-none focus:ring-0 p-0 resize-none" />

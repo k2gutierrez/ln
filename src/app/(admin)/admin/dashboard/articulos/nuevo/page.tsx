@@ -7,7 +7,6 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
 
-// Importamos el editor de forma dinámica para que no cause errores con el servidor de Next.js
 const ReactQuill = dynamic(() => import('react-quill-new'), { ssr: false });
 
 export default function NewArticle() {
@@ -21,32 +20,26 @@ export default function NewArticle() {
   const [content, setContent] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  
+  // NUEVO ESTADO: Fecha de publicación (Por defecto la de hoy en formato AAAA-MM-DD)
+  const [publishedAt, setPublishedAt] = useState(new Date().toISOString().split('T')[0]);
 
-  // Función para convertir título en Slug amigable para URL
   const generateSlug = (text: string) => {
     return text
       .toLowerCase()
       .trim()
-      // 1. Normalizar: Separa los acentos de las letras (é -> e + ´)
       .normalize('NFD')
-      // 2. Eliminar los acentos (los "diacríticos")
       .replace(/[\u0300-\u036f]/g, '')
-      // 3. Reemplazar la ñ por n (opcional, pero recomendado para URLs)
       .replace(/ñ/g, 'n')
-      // 4. Quitar caracteres especiales que no sean letras, números o espacios
       .replace(/[^a-z0-9\s-]/g, '')
-      // 5. Reemplazar espacios y guiones bajos por guiones normales
       .replace(/[\s_-]+/g, '-')
-      // 6. Eliminar guiones al principio o al final
       .replace(/^-+|-+$/g, '');
   };
 
-  // Actualizar slug cuando cambie el título
   useEffect(() => {
     setSlug(generateSlug(title));
   }, [title]);
 
-  // Manejar previsualización de imagen
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
@@ -63,7 +56,6 @@ export default function NewArticle() {
       let imageUrl = '';
       const cleanContent = content.replace(/&nbsp;|\u00a0/g, ' ');
 
-      // 1. Subir imagen si existe
       if (imageFile) {
         const fileExt = imageFile.name.split('.').pop();
         const fileName = `${Date.now()}.${fileExt}`;
@@ -79,7 +71,7 @@ export default function NewArticle() {
         imageUrl = data.publicUrl;
       }
 
-      // 2. Guardar artículo en la base de datos
+      // Guardar artículo con la fecha elegida
       const { error: dbError } = await supabase
         .from('articles')
         .insert([
@@ -89,7 +81,9 @@ export default function NewArticle() {
             excerpt,
             content: cleanContent,
             image_url: imageUrl,
-            is_published: false, // Se guarda como borrador por defecto
+            is_published: false,
+            // Convertimos la fecha del calendario a formato ISO para la base de datos
+            published_at: new Date(publishedAt).toISOString(), 
           },
         ]);
 
@@ -104,15 +98,14 @@ export default function NewArticle() {
     }
   };
 
-  // Configuración de la barra de herramientas del editor
   const quillModules = {
     toolbar: [
-      [{ 'header': [2, 3, false] }], // Permite poner Subtítulos (H2, H3) o texto normal
-      ['bold', 'italic', 'underline', 'strike', 'blockquote'], // Negritas, cursivas, citas
-      [{ 'align': [] }], // <--- ADD THIS LINE HERE
-      [{'list': 'ordered'}, {'list': 'bullet'}], // Listas numeradas y con viñetas
-      ['link'], // Agregar enlaces a otras páginas
-      ['clean'] // Botón para borrar el formato si se copia y pega algo feo
+      [{ 'header': [2, 3, false] }],
+      ['bold', 'italic', 'underline', 'strike', 'blockquote'],
+      [{ 'align': [] }],
+      [{'list': 'ordered'}, {'list': 'bullet'}],
+      ['link'],
+      ['clean']
     ],
   };
 
@@ -137,7 +130,6 @@ export default function NewArticle() {
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           
-          {/* Columna Principal: Contenido (Ahora ocupa 3 columnas, dándole mucho más espacio) */}
           <div className="lg:col-span-3 space-y-6">
             <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm space-y-6">
               <div>
@@ -170,14 +162,23 @@ export default function NewArticle() {
             </div>
           </div>
 
-          {/* Columna Lateral: Metadatos e Imagen (Ahora ocupa solo 1 columna, más estrecha) */}
           <div className="lg:col-span-1 space-y-6">
             
+            {/* NUEVA CARD: Fecha de Publicación */}
+            <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
+              <label className="block text-xs font-bold uppercase tracking-widest text-slate-400 mb-2">Fecha</label>
+              <input
+                type="date"
+                value={publishedAt}
+                onChange={(e) => setPublishedAt(e.target.value)}
+                className="w-full text-sm text-slate-700 font-medium border-slate-200 rounded-xl focus:ring-slate-900 focus:border-slate-900 p-3 bg-slate-50"
+              />
+            </div>
+
             {/* Card de Imagen */}
             <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
               <label className="block text-xs font-bold uppercase tracking-widest text-slate-400 mb-4">Portada</label>
               <div className="relative group cursor-pointer">
-                {/* Cambié la altura de h-48 a h-36 para que sea un cuadro más pequeño y manejable */}
                 {imagePreview ? (
                   <div className="relative h-36 w-full rounded-2xl overflow-hidden border border-slate-100 bg-slate-50">
                     <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
