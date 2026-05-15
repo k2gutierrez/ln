@@ -48,7 +48,7 @@ export default async function EventsPage() {
         <section className="mb-20">
           <h2 className="text-2xl font-bold text-slate-900 mb-8 flex items-center gap-3">
             <span className="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></span>
-            Próximos eventos
+            Eventos
           </h2>
 
           <div className="space-y-8">
