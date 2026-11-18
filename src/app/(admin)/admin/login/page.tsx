@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { supabase } from "@/lib/supabase/client";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
@@ -92,6 +93,14 @@ export default function AdminLogin() {
               className="w-full rounded-xl border border-slate-200 px-4 py-3 text-slate-900 transition-all focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900/10"
               placeholder="••••••••"
             />
+            <div className="mt-2 text-right">
+              <Link
+                href="/admin/recuperar"
+                className="text-xs font-medium text-slate-500 transition-colors hover:text-slate-900"
+              >
+                ¿Olvidaste tu contraseña?
+              </Link>
+            </div>
           </div>
 
           <button

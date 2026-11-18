@@ -137,6 +137,49 @@ NEXT_PUBLIC_SITE_URL=https://lauraniebla.com
 Sin `https://` el build falla (`Invalid URL`), porque el valor se usa en
 `metadataBase` y en `new URL()`.
 
+## Recuperación de contraseña
+
+El flujo ya está implementado:
+
+- `/admin/recuperar` — la persona escribe su correo y recibe el enlace.
+- `/auth/confirm` — verifica el token del correo y crea la sesión.
+- `/admin/restablecer` — define la nueva contraseña (mínimo 8 caracteres).
+
+Para que funcione en producción, configura Supabase:
+
+### 1. URL Configuration
+
+Authentication → **URL Configuration**:
+
+| Campo | Valor |
+| --- | --- |
+| Site URL | `https://www.lauraniebla.com` (el host que sirve el sitio) |
+| Redirect URLs | `https://www.lauraniebla.com/**` |
+| | `https://lauraniebla.com/**` |
+| | `http://localhost:3000/**` |
+
+> Hoy el apex `lauraniebla.com` redirige a `www`, así que el Site URL debe
+> usar el host servido para evitar un salto extra en el enlace del correo.
+
+### 2. Plantilla del correo
+
+Authentication → **Email Templates** → **Reset Password**. Sustituye el
+enlace por:
+
+```html
+<a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=recovery&next=/admin/restablecer">
+  Restablecer contraseña
+</a>
+```
+
+Es importante usar `{{ .TokenHash }}` (no `{{ .ConfirmationURL }}`): así el
+token se verifica en el servidor y la sesión queda en cookies.
+
+### 3. Prueba
+
+Authentication → **Users** → menú del usuario → **Reset password**, o entra a
+`/admin/recuperar` y escribe el correo. El enlace caduca y es de un solo uso.
+
 ## Despliegue en AWS Amplify
 
 1. Conecta el repositorio y deja que Amplify detecte Next.js (SSR).

@@ -43,8 +43,17 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(redirectUrl);
   }
 
+  // Rutas accesibles sin sesión: login, solicitar recuperación y definir
+  // la nueva contraseña (esta última muestra su propio mensaje si el
+  // enlace es inválido).
+  const publicAdminPaths = [
+    "/admin/login",
+    "/admin/recuperar",
+    "/admin/restablecer",
+  ];
+
   // Panel privado: sin sesión, al login.
-  if (pathname.startsWith("/admin") && pathname !== "/admin/login" && !user) {
+  if (pathname.startsWith("/admin") && !publicAdminPaths.includes(pathname) && !user) {
     const redirectUrl = request.nextUrl.clone();
     redirectUrl.pathname = "/admin/login";
     redirectUrl.search = "";
