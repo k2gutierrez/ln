@@ -7,6 +7,9 @@ de redacción y moderación de comentarios).
 Incluye modo claro/oscuro, panel de administración protegido, SEO y
 notificaciones con Sonner.
 
+- **Producción:** <https://lauraniebla.com>
+- **Repositorio:** <https://github.com/k2gutierrez/ln>
+
 > **Next.js 15** se eligió a propósito: AWS Amplify Hosting soporta Next.js
 > hasta la versión 15. Next.js 16 no está soportado todavía.
 
@@ -31,7 +34,7 @@ cp .env.example .env.local
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase → Project Settings → API | Sí (comentarios) |
 | `OPENAI_API_KEY` | https://platform.openai.com/api-keys | Sí (IA y comentarios) |
 | `OPENAI_MODEL` | Opcional. Por defecto `gpt-4o-mini` | No |
-| `NEXT_PUBLIC_SITE_URL` | URL pública del sitio, sin barra final | Sí en producción |
+| `NEXT_PUBLIC_SITE_URL` | URL pública con `https://` (producción: `https://lauraniebla.com`) | Sí en producción |
 | `NEXT_PUBLIC_GA_ID` | Google Analytics 4 (`G-XXXXXXXXXX`) | No |
 
 > `SUPABASE_SERVICE_ROLE_KEY` es secreta y solo se usa en el servidor. Nunca
@@ -125,16 +128,41 @@ src/
 - 404 personalizado.
 
 `NEXT_PUBLIC_SITE_URL` debe ser el dominio real en producción para que las
-URLs canónicas y Open Graph sean absolutas.
+URLs canónicas y Open Graph sean absolutas. Debe incluir el protocolo:
+
+```bash
+NEXT_PUBLIC_SITE_URL=https://lauraniebla.com
+```
+
+Sin `https://` el build falla (`Invalid URL`), porque el valor se usa en
+`metadataBase` y en `new URL()`.
 
 ## Despliegue en AWS Amplify
 
 1. Conecta el repositorio y deja que Amplify detecte Next.js (SSR).
 2. En **App settings → Environment variables** define todas las variables de
-   `.env.local`, incluida `NEXT_PUBLIC_SITE_URL` con el dominio final.
+   `.env.local`, incluida:
+
+   ```bash
+   NEXT_PUBLIC_SITE_URL=https://lauraniebla.com
+   ```
 3. Las variables `NEXT_PUBLIC_*` se incrustan en el build: si cambian, hay que
    volver a desplegar.
 4. Confirma que la rama use Node 20+.
+
+### Dominio de producción
+
+El dominio es **<https://lauraniebla.com>** y su zona DNS está en AWS Route 53.
+
+1. En Amplify → **Domain management**, agrega `lauraniebla.com`.
+2. Crea el registro **ALIAS A** que indique Amplify (Route 53 permite
+   seleccionar el recurso de Amplify directamente).
+3. Agrega `www.lauraniebla.com` como **redirección 301** al dominio principal.
+4. Verifica `https://lauraniebla.com/sitemap.xml` y el `<link rel="canonical">`
+   de un artículo.
+
+> El dominio ya tiene los NS en Route 53, pero necesita el registro A/ALIAS.
+> Mientras no exista, `lauraniebla.com` no resuelve.
 
 Notas:
 
