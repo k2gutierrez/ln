@@ -1,8 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
+import { toast } from 'sonner';
+import { supabase } from '@/lib/supabase/client';
+
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 
 export default function ProfileEditor() {
   const [loading, setLoading] = useState(true);
@@ -26,11 +29,11 @@ export default function ProfileEditor() {
         const { data: { user } } = await supabase.auth.getUser();
         
         if (user) {
-          const { data, error } = await supabase
+          const { data } = await supabase
             .from('profiles')
             .select('*')
             .eq('id', user.id)
-            .single();
+            .maybeSingle();
 
           if (data) {
             setFullName(data.full_name || '');
@@ -71,7 +74,16 @@ export default function ProfileEditor() {
 
       // 1. Si hay una nueva imagen, la subimos
       if (imageFile) {
-        const fileExt = imageFile.name.split('.').pop();
+        if (!imageFile.type.startsWith('image/')) {
+          toast.error('El archivo debe ser una imagen.');
+          return;
+        }
+        if (imageFile.size > MAX_IMAGE_BYTES) {
+          toast.error('La imagen no puede superar los 5 MB.');
+          return;
+        }
+
+        const fileExt = imageFile.name.split('.').pop() ?? 'jpg';
         const fileName = `${user.id}-${Date.now()}.${fileExt}`;
         const filePath = `profiles/${fileName}`;
 
@@ -100,7 +112,7 @@ export default function ProfileEditor() {
 
       if (dbError) throw dbError;
 
-      alert('¡Perfil actualizado con éxito!');
+      toast.success('Perfil actualizado.');
       // Actualizamos el estado de la imagen actual por si no recarga la página
       setAvatarUrl(finalAvatarUrl);
       setImageFile(null); 
@@ -108,7 +120,7 @@ export default function ProfileEditor() {
 
     } catch (error) {
       console.error('Error:', error);
-      alert('Hubo un error al guardar tu perfil.');
+      toast.error('No se pudo guardar el perfil.');
     } finally {
       setSaving(false);
     }
@@ -121,7 +133,7 @@ export default function ProfileEditor() {
   return (
     <div className="min-h-screen bg-slate-50 p-6 md:p-12">
       <div className="max-w-3xl mx-auto">
-        <header className="mb-10 flex justify-between items-center">
+        <header className="mb-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <Link href="/admin/dashboard" className="text-sm text-slate-500 hover:text-slate-900 transition-colors">
               ← Volver al Dashboard
@@ -131,7 +143,7 @@ export default function ProfileEditor() {
           <button
             onClick={handleSave}
             disabled={saving || !fullName}
-            className="bg-slate-900 text-white px-8 py-3 rounded-xl font-semibold hover:bg-slate-800 disabled:opacity-50 transition-all shadow-lg shadow-slate-200"
+            className="bg-slate-900 text-white px-8 py-3 rounded-xl font-semibold hover:bg-slate-800 disabled:opacity-50 transition-all shadow-lg shadow-slate-200 w-full sm:w-auto"
           >
             {saving ? 'Guardando...' : 'Guardar Cambios'}
           </button>
@@ -150,7 +162,7 @@ export default function ProfileEditor() {
                     className="w-full h-full object-cover aspect-square"
                   />
                 ) : (
-                  <span className="text-slate-400 text-sm font-medium">Sin foto</span>
+                  <span className="text-slate-500 text-sm font-medium">Sin foto</span>
                 )}
               </div>
               <label className="absolute bottom-0 right-0 bg-slate-900 text-white p-3 rounded-full cursor-pointer shadow-lg hover:bg-slate-800 transition-colors">
@@ -174,7 +186,7 @@ export default function ProfileEditor() {
           {/* Formulario de Datos Personales */}
           <div className="space-y-6">
             <div>
-              <label className="block text-xs font-bold uppercase tracking-widest text-slate-400 mb-2">Nombre para mostrar</label>
+              <label className="block text-xs font-bold uppercase tracking-widest text-slate-500 mb-2">Nombre para mostrar</label>
               <input
                 type="text"
                 value={fullName}
@@ -185,7 +197,7 @@ export default function ProfileEditor() {
             </div>
 
             <div>
-              <label className="block text-xs font-bold uppercase tracking-widest text-slate-400 mb-2">Biografía</label>
+              <label className="block text-xs font-bold uppercase tracking-widest text-slate-500 mb-2">Biografía</label>
               <textarea
                 rows={6}
                 value={bio}
@@ -197,7 +209,7 @@ export default function ProfileEditor() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-xs font-bold uppercase tracking-widest text-slate-400 mb-2">URL de LinkedIn</label>
+                <label className="block text-xs font-bold uppercase tracking-widest text-slate-500 mb-2">URL de LinkedIn</label>
                 <input
                   type="url"
                   value={linkedinUrl}
@@ -207,7 +219,7 @@ export default function ProfileEditor() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold uppercase tracking-widest text-slate-400 mb-2">URL de Instagram</label>
+                <label className="block text-xs font-bold uppercase tracking-widest text-slate-500 mb-2">URL de Instagram</label>
                 <input
                   type="url"
                   value={instagramUrl}

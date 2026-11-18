@@ -1,13 +1,16 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
+import { toast } from 'sonner';
+import { supabase } from '@/lib/supabase/client';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import 'react-quill-new/dist/quill.snow.css';
 
 const ReactQuill = dynamic(() => import('react-quill-new'), { ssr: false });
+
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 
 export default function EditArticle() {
   const router = useRouter();
@@ -40,11 +43,7 @@ export default function EditArticle() {
     ],
   };
 
-  useEffect(() => {
-    if (id) loadArticle();
-  }, [id]);
-
-  async function loadArticle() {
+  const loadArticle = useCallback(async () => {
     try {
       const { data, error } = await supabase.from('articles').select('*').eq('id', id).single();
       if (error) throw error;
@@ -64,12 +63,16 @@ export default function EditArticle() {
           setPublishedAt(new Date().toISOString().split('T')[0]);
         }
       }
-    } catch (err) {
+    } catch {
       router.push('/admin/dashboard/articulos');
     } finally {
       setLoading(false);
     }
-  }
+  }, [id, router]);
+
+  useEffect(() => {
+    if (id) loadArticle();
+  }, [id, loadArticle]);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -87,24 +90,46 @@ export default function EditArticle() {
 
       let finalImageUrl = imageUrl;
       if (imageFile) {
+        if (!imageFile.type.startsWith('image/')) {
+          toast.error('El archivo debe ser una imagen.');
+          return;
+        }
+        if (imageFile.size > MAX_IMAGE_BYTES) {
+          toast.error('La imagen no puede superar los 5 MB.');
+          return;
+        }
+
         const filePath = `articles/${Date.now()}-${imageFile.name}`;
-        await supabase.storage.from('media').upload(filePath, imageFile);
-        finalImageUrl = supabase.storage.from('media').getPublicUrl(filePath).data.publicUrl;
+        const { error: uploadError } = await supabase.storage
+          .from('media')
+          .upload(filePath, imageFile);
+
+        if (uploadError) throw uploadError;
+
+        finalImageUrl = supabase.storage.from('media').getPublicUrl(filePath)
+          .data.publicUrl;
       }
 
-      await supabase.from('articles').update({
-        title, 
-        slug, 
-        excerpt, 
-        content: cleanContent, 
-        image_url: finalImageUrl,
-        // GUARDAR LA FECHA: La regresamos a formato ISO para la base de datos
-        published_at: new Date(publishedAt).toISOString()
-      }).eq('id', id);
+      const { error } = await supabase
+        .from('articles')
+        .update({
+          title,
+          slug,
+          excerpt,
+          content: cleanContent,
+          image_url: finalImageUrl,
+          published_at: new Date(`${publishedAt}T12:00:00`).toISOString(),
+        })
+        .eq('id', id);
 
+      if (error) throw error;
+
+      toast.success('Cambios guardados.');
       router.push('/admin/dashboard/articulos');
+      router.refresh();
     } catch (err) {
-      alert('Error al actualizar.');
+      console.error(err);
+      toast.error('No se pudo actualizar el artículo.');
     } finally {
       setSaving(false);
     }
@@ -115,12 +140,12 @@ export default function EditArticle() {
   return (
     <div className="min-h-screen bg-slate-50 p-6 md:p-12">
       <div className="max-w-6xl mx-auto">
-        <header className="mb-10 flex justify-between items-center">
+        <header className="mb-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <Link href="/admin/dashboard/articulos" className="text-sm text-slate-500 hover:text-slate-900 transition-colors">← Volver</Link>
             <h1 className="text-3xl font-bold text-slate-900 mt-2 font-serif">Editar Artículo</h1>
           </div>
-          <button onClick={handleSubmit} disabled={saving} className="bg-slate-900 text-white px-8 py-3 rounded-xl font-semibold shadow-lg">
+          <button onClick={handleSubmit} disabled={saving} className="bg-slate-900 text-white px-8 py-3 rounded-xl font-semibold shadow-lg w-full sm:w-auto">
             {saving ? 'Guardando...' : 'Guardar Cambios'}
           </button>
         </header>
@@ -139,7 +164,7 @@ export default function EditArticle() {
             
             {/* NUEVA CARD: Fecha de Publicación */}
             <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
-              <label className="block text-xs font-bold uppercase tracking-widest text-slate-400 mb-2">Fecha</label>
+              <label className="block text-xs font-bold uppercase tracking-widest text-slate-500 mb-2">Fecha</label>
               <input
                 type="date"
                 value={publishedAt}
@@ -149,15 +174,15 @@ export default function EditArticle() {
             </div>
 
             <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
-              <label className="block text-xs font-bold uppercase text-slate-400 mb-4">Portada</label>
+              <label className="block text-xs font-bold uppercase text-slate-500 mb-4">Portada</label>
               <div className="relative h-36 w-full rounded-2xl overflow-hidden bg-slate-50 border border-dashed border-slate-200">
-                {(imagePreview || imageUrl) && <img src={imagePreview || imageUrl} className="w-full h-full object-cover" />}
+                {(imagePreview || imageUrl) && <img src={imagePreview || imageUrl} alt="Portada del artículo" className="w-full h-full object-cover" />}
                 <input type="file" accept="image/*" onChange={handleImageChange} className="absolute inset-0 opacity-0 cursor-pointer" />
               </div>
             </div>
             
             <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
-              <label className="block text-xs font-bold uppercase text-slate-400 mb-2">Extracto</label>
+              <label className="block text-xs font-bold uppercase text-slate-500 mb-2">Extracto</label>
               <textarea rows={5} value={excerpt} onChange={(e) => setExcerpt(e.target.value)} className="w-full text-sm text-slate-600 border-none focus:ring-0 p-0 resize-none" />
             </div>
           </div>

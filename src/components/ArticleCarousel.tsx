@@ -1,11 +1,11 @@
-'use client'; // ¡Muy importante! Le dice a Next.js que este código usa interactividad
+"use client";
 
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
-import Image from 'next/image';
+import { useCallback, useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import Image from "next/image";
+import { formatDateShort } from "@/lib/format";
 
-// Tipado para TypeScript
-interface Article {
+export interface CarouselArticle {
   id: string;
   title: string;
   excerpt: string;
@@ -14,104 +14,185 @@ interface Article {
   published_at: string;
 }
 
-const formatearFecha = (fechaString: string) => {
-  const opciones: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short', year: 'numeric' };
-  return new Date(fechaString).toLocaleDateString('es-ES', opciones);
-};
+const FALLBACK_IMAGE =
+  "https://images.unsplash.com/photo-1499750310107-5fef28a66643?auto=format&fit=crop&q=80&w=800";
 
-export default function ArticleCarousel({ articles }: { articles: Article[] }) {
+export default function ArticleCarousel({
+  articles,
+}: {
+  articles: CarouselArticle[];
+}) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
+  const [reducedMotion, setReducedMotion] = useState(false);
+  const touchStart = useRef<{ x: number; y: number } | null>(null);
 
-  // Lógica para que gire en automático cada 5 segundos
+  const total = articles.length;
+
+  const goTo = useCallback(
+    (index: number) => {
+      if (total === 0) return;
+      setCurrentIndex(((index % total) + total) % total);
+    },
+    [total]
+  );
+
+  const goNext = useCallback(() => goTo(currentIndex + 1), [currentIndex, goTo]);
+  const goPrev = useCallback(() => goTo(currentIndex - 1), [currentIndex, goTo]);
+
   useEffect(() => {
-    if (articles.length <= 1 || isPaused) return;
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const update = () => setReducedMotion(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
 
-    const interval = setInterval(() => {
-      setCurrentIndex((prevIndex) => 
-        prevIndex === articles.length - 1 ? 0 : prevIndex + 1
-      );
-    }, 5000);
+  // Autoplay: se pausa al pasar el mouse, al enfocar o al tocar.
+  useEffect(() => {
+    if (total <= 1 || isPaused || reducedMotion) return;
+    const timer = window.setInterval(goNext, 7000);
+    return () => window.clearInterval(timer);
+  }, [total, isPaused, reducedMotion, goNext]);
 
-    return () => clearInterval(interval);
-  }, [articles.length, isPaused]);
-
-  if (articles.length === 0) {
+  if (total === 0) {
     return (
-      <div className="text-center py-12 text-slate-500 bg-white rounded-3xl border border-slate-100">
+      <div className="rounded-3xl border border-slate-100 bg-white py-12 text-center text-slate-500">
         Próximamente nuevos artículos.
       </div>
     );
   }
 
   return (
-    <div 
-      className="relative w-full max-w-5xl mx-auto bg-white rounded-[2rem] shadow-sm border border-slate-100 overflow-hidden"
-      onMouseEnter={() => setIsPaused(true)} // Pausa el carrusel si el usuario pone el mouse encima
-      onMouseLeave={() => setIsPaused(false)}
-    >
-      <div className="relative h-[500px] md:h-[450px]">
-        {articles.map((article, index) => (
-          <div
-            key={article.id}
-            className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
-              index === currentIndex ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'
-            }`}
-          >
-            <div className="flex flex-col md:flex-row h-full">
-              
-              {/* Mitad Izquierda: Imagen (Ya no se verá gigante) */}
-              <div className="relative w-full md:w-1/2 h-56 md:h-full bg-slate-100">
-                <Image 
-                  src={article.image_url || 'https://images.unsplash.com/photo-1499750310107-5fef28a66643?auto=format&fit=crop&q=80&w=800'} 
-                  alt={article.title}
-                  fill
-                  className="object-cover"
-                  priority={index === 0}
-                />
-              </div>
+    <div className="w-full">
+      <div
+        className="relative overflow-hidden rounded-[2rem] border border-slate-100 bg-white shadow-sm"
+        role="region"
+        aria-roledescription="carrusel"
+        aria-label="Artículos recientes"
+        onMouseEnter={() => setIsPaused(true)}
+        onMouseLeave={() => setIsPaused(false)}
+        onFocusCapture={() => setIsPaused(true)}
+        onBlurCapture={() => setIsPaused(false)}
+        onTouchStart={(event) => {
+          const touch = event.touches[0];
+          touchStart.current = { x: touch.clientX, y: touch.clientY };
+          setIsPaused(true);
+        }}
+        onTouchEnd={(event) => {
+          const start = touchStart.current;
+          touchStart.current = null;
+          setIsPaused(false);
+          if (!start || total <= 1) return;
+          const touch = event.changedTouches[0];
+          const dx = touch.clientX - start.x;
+          const dy = touch.clientY - start.y;
+          if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy)) {
+            if (dx < 0) goNext();
+            else goPrev();
+          }
+        }}
+      >
+        {/* Todas las diapositivas comparten celda: la tarjeta crece con
+            la más alta y ningún contenido queda recortado. */}
+        <div className="grid">
+          {articles.map((article, index) => {
+            const isActive = index === currentIndex;
 
-              {/* Mitad Derecha: Contenido del Artículo */}
-              <div className="w-full md:w-1/2 p-8 md:p-12 flex flex-col justify-center bg-white">
-                <div className="flex items-center gap-3 text-xs text-slate-400 mb-4 font-bold uppercase tracking-widest">
-                  <span>{formatearFecha(article.published_at)}</span>
-                </div>
-                
-                <h3 className="text-2xl md:text-3xl font-bold text-slate-900 mb-4 leading-tight font-serif">
-                  {article.title}
-                </h3>
-                
-                <p className="text-slate-600 line-clamp-3 leading-relaxed mb-8">
-                  {article.excerpt}
-                </p>
-                
-                <div className="mt-auto">
-                  <Link 
-                    href={`/articulos/${article.slug}`}
-                    className="inline-flex items-center gap-2 text-sm font-bold text-slate-900 border-b-2 border-slate-900 pb-1 hover:text-slate-500 hover:border-slate-500 transition-all"
-                  >
-                    Leer artículo completo <span>→</span>
-                  </Link>
+            return (
+              <div
+                key={article.id}
+                aria-hidden={!isActive}
+                className={`col-start-1 row-start-1 transition-opacity duration-700 ease-in-out ${
+                  isActive
+                    ? "z-10 opacity-100"
+                    : "pointer-events-none z-0 opacity-0"
+                }`}
+              >
+                <div className="flex h-full flex-col md:flex-row">
+                  <div className="relative h-56 w-full shrink-0 bg-slate-100 md:h-auto md:min-h-[420px] md:w-1/2">
+                    <Image
+                      src={article.image_url || FALLBACK_IMAGE}
+                      alt={article.title}
+                      fill
+                      sizes="(max-width: 768px) 100vw, 50vw"
+                      className="object-cover"
+                      priority={index === 0}
+                    />
+                  </div>
+
+                  <div className="flex w-full flex-1 flex-col justify-center bg-white p-6 sm:p-8 md:w-1/2 md:flex-none md:p-12">
+                    <p className="mb-4 text-xs font-bold uppercase tracking-widest text-slate-500">
+                      {formatDateShort(article.published_at)}
+                    </p>
+
+                    <h3 className="mb-4 font-serif text-2xl font-bold leading-tight text-slate-900 text-balance md:text-3xl">
+                      {article.title}
+                    </h3>
+
+                    <p className="mb-6 line-clamp-3 leading-relaxed text-slate-600">
+                      {article.excerpt}
+                    </p>
+
+                    <div className="mt-auto">
+                      <Link
+                        href={`/articulos/${article.slug}`}
+                        tabIndex={isActive ? 0 : -1}
+                        className="inline-flex items-center gap-2 border-b-2 border-slate-900 pb-1 text-sm font-bold text-slate-900 transition-all hover:border-slate-500 hover:text-slate-500"
+                      >
+                        Leer artículo completo <span aria-hidden="true">→</span>
+                      </Link>
+                    </div>
+                  </div>
                 </div>
               </div>
+            );
+          })}
+        </div>
 
-            </div>
-          </div>
-        ))}
+        {total > 1 && (
+          <>
+            <button
+              type="button"
+              onClick={goPrev}
+              aria-label="Artículo anterior"
+              className="absolute left-3 top-1/2 z-20 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-slate-200 bg-white/90 text-slate-900 shadow-md backdrop-blur transition-colors hover:bg-white md:flex"
+            >
+              <span aria-hidden="true">←</span>
+            </button>
+            <button
+              type="button"
+              onClick={goNext}
+              aria-label="Artículo siguiente"
+              className="absolute right-3 top-1/2 z-20 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-slate-200 bg-white/90 text-slate-900 shadow-md backdrop-blur transition-colors hover:bg-white md:flex"
+            >
+              <span aria-hidden="true">→</span>
+            </button>
+          </>
+        )}
       </div>
 
-      {/* Controles de "Puntitos" en la parte inferior */}
-      {articles.length > 1 && (
-        <div className="absolute bottom-6 left-0 right-0 flex justify-center gap-3 z-20">
-          {articles.map((_, idx) => (
+      {/* Puntos fuera de la tarjeta: ya no chocan con el enlace y cada
+          uno tiene un área táctil de 44 × 44 px. */}
+      {total > 1 && (
+        <div className="mt-5 flex items-center justify-center">
+          {articles.map((article, index) => (
             <button
-              key={idx}
-              onClick={() => setCurrentIndex(idx)}
-              className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${
-                idx === currentIndex ? 'bg-slate-900 w-8' : 'bg-slate-300 hover:bg-slate-400'
-              }`}
-              aria-label={`Ir al artículo ${idx + 1}`}
-            />
+              key={article.id}
+              type="button"
+              onClick={() => goTo(index)}
+              aria-label={`Ir al artículo ${index + 1} de ${total}`}
+              aria-current={index === currentIndex ? "true" : undefined}
+              className="group flex h-11 w-11 items-center justify-center rounded-full"
+            >
+              <span
+                className={`block h-2.5 rounded-full transition-all duration-300 ${
+                  index === currentIndex
+                    ? "w-7 bg-slate-900"
+                    : "w-2.5 bg-slate-300 group-hover:bg-slate-400"
+                }`}
+              />
+            </button>
           ))}
         </div>
       )}

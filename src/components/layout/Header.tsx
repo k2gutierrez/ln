@@ -1,62 +1,103 @@
-'use client'; // <-- Agregamos esto para permitir interactividad en el navegador
+"use client";
 
-import { useState } from 'react';
-import Link from 'next/link';
+import { useState } from "react";
+import Link from "next/link";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
+
+const links = [
+  { href: "/", label: "Inicio" },
+  { href: "/articulos", label: "Artículos" },
+  { href: "/eventos", label: "Eventos" },
+  { href: "/acerca-de-laura", label: "Sobre Laura" },
+];
 
 export default function Header() {
-  // Estado para controlar si el menú móvil está abierto o cerrado
   const [isOpen, setIsOpen] = useState(false);
-
-  // Función para cerrar el menú automáticamente al hacer clic en un enlace
   const closeMenu = () => setIsOpen(false);
 
   return (
-    <header className="sticky top-0 z-50 bg-[#FDFDFD]/80 backdrop-blur-md border-b border-slate-100">
-      <div className="max-w-6xl mx-auto px-6 h-20 flex items-center justify-between">
-        
-        {/* Logo / Nombre de la columna (Tus estilos originales intactos) */}
-        <Link href="/" onClick={closeMenu} className="text-2xl font-semibold tracking-tight text-slate-900">
-          Con<span className="font-light text-slate-500">Intención</span><span className="font-semibold tracking-tight text-slate-900 text-xs"> By Laura Niebla</span>
-        </Link>
-        
-        {/* Navegación Desktop */}
-        <nav className="hidden md:flex gap-8 text-sm font-medium text-slate-600">
-          <Link href="/" className="hover:text-slate-900 transition-colors">Inicio</Link>
-          <Link href="/articulos" className="hover:text-slate-900 transition-colors">Artículos</Link>
-          <Link href="/eventos" className="hover:text-slate-900 transition-colors">Eventos</Link>
-          <Link href="/acerca-de-laura" className="hover:text-slate-900 transition-colors">Sobre Laura</Link>
-        </nav>
-
-        {/* Botón Menú Mobile interactivo */}
-        <button 
-          onClick={() => setIsOpen(!isOpen)} 
-          className="md:hidden p-2 text-slate-600 hover:text-slate-900 transition-colors"
-          aria-label="Abrir menú"
+    <header className="sticky top-0 z-50 border-b border-slate-100 bg-[#FDFDFD]/80 backdrop-blur-md">
+      <div className="mx-auto flex h-20 max-w-6xl items-center justify-between gap-4 px-6">
+        <Link
+          href="/"
+          onClick={closeMenu}
+          className="text-2xl font-semibold tracking-tight text-slate-900"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
-            {isOpen ? (
-              // Ícono de "X" cuando el menú está abierto
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            ) : (
-              // Ícono de "Hamburguesa" cuando el menú está cerrado (el que ya tenías)
-              <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-            )}
-          </svg>
-        </button>
+          Con<span className="font-light text-slate-500">Intención</span>
+          <span className="ml-1 hidden text-xs font-semibold tracking-tight text-slate-900 min-[380px]:inline">
+            By Laura Niebla
+          </span>
+        </Link>
+
+        <div className="flex items-center gap-2 md:gap-6">
+          <nav className="hidden gap-8 text-sm font-medium text-slate-600 md:flex">
+            {links.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="transition-colors hover:text-slate-900"
+              >
+                {link.label}
+              </Link>
+            ))}
+          </nav>
+
+          <ThemeToggle />
+
+          <button
+            type="button"
+            onClick={() => setIsOpen((open) => !open)}
+            className="p-2 text-slate-600 transition-colors hover:text-slate-900 md:hidden"
+            aria-label={isOpen ? "Cerrar menú" : "Abrir menú"}
+            aria-expanded={isOpen}
+            aria-controls="mobile-menu"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={1.5}
+              stroke="currentColor"
+              className="h-6 w-6"
+              aria-hidden="true"
+            >
+              {isOpen ? (
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M6 18 18 6M6 6l12 12"
+                />
+              ) : (
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"
+                />
+              )}
+            </svg>
+          </button>
+        </div>
       </div>
 
-      {/* --- Menú Desplegable para Celulares --- */}
-      {/* Usamos una transición suave de altura y opacidad */}
-      <div 
-        className={`md:hidden overflow-hidden transition-all duration-300 ease-in-out bg-[#FDFDFD] ${
-          isOpen ? 'max-h-64 border-b border-slate-100 opacity-100' : 'max-h-0 opacity-0'
+      <div
+        id="mobile-menu"
+        className={`overflow-hidden border-slate-100 bg-[#FDFDFD] transition-all duration-300 ease-in-out md:hidden ${
+          isOpen
+            ? "max-h-64 border-b opacity-100"
+            : "max-h-0 opacity-0"
         }`}
       >
-        <nav className="flex flex-col px-6 py-4 gap-4 text-sm font-medium text-slate-600 shadow-inner">
-          <Link href="/" onClick={closeMenu} className="block hover:text-slate-900 transition-colors py-2">Inicio</Link>
-          <Link href="/articulos" onClick={closeMenu} className="block hover:text-slate-900 transition-colors py-2">Artículos</Link>
-          <Link href="/eventos" onClick={closeMenu} className="block hover:text-slate-900 transition-colors py-2">Eventos</Link>
-          <Link href="/acerca-de-laura" onClick={closeMenu} className="block hover:text-slate-900 transition-colors py-2">Sobre Laura</Link>
+        <nav className="flex flex-col gap-4 px-6 py-4 text-sm font-medium text-slate-600 shadow-inner">
+          {links.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              onClick={closeMenu}
+              className="block py-2 transition-colors hover:text-slate-900"
+            >
+              {link.label}
+            </Link>
+          ))}
         </nav>
       </div>
     </header>

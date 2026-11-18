@@ -2,6 +2,13 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { toast } from 'sonner';
+
+interface ApiResponse {
+  success?: boolean;
+  text?: string;
+  error?: string;
+}
 
 export default function AIAssistant() {
   const [prompt, setPrompt] = useState('');
@@ -24,16 +31,23 @@ export default function AIAssistant() {
         body: JSON.stringify({ prompt, type, wordCount }),
       });
 
-      const data = await res.json();
-      
-      if (data.success) {
-        setResult(data.text);
-      } else {
-        alert('Hubo un error de comunicación con la IA.');
+      const data = (await res.json().catch(() => null)) as ApiResponse | null;
+
+      if (!res.ok || !data?.text) {
+        if (res.status === 401) {
+          toast.error('Tu sesión expiró. Vuelve a iniciar sesión.');
+        } else if (res.status === 429) {
+          toast.error('Has hecho muchas solicitudes. Espera un momento.');
+        } else {
+          toast.error(data?.error ?? 'Hubo un error de comunicación con la IA.');
+        }
+        return;
       }
+
+      setResult(data.text);
     } catch (error) {
       console.error(error);
-      alert('Error de red.');
+      toast.error('Error de red al contactar a la IA.');
     } finally {
       setLoading(false);
     }
@@ -41,7 +55,7 @@ export default function AIAssistant() {
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(result);
-    alert('¡Copiado al portapapeles!');
+    toast.success('Texto copiado al portapapeles.');
   };
 
   return (
@@ -65,7 +79,7 @@ export default function AIAssistant() {
             <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
               <form onSubmit={handleGenerate} className="space-y-6">
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-widest text-slate-400 mb-3">¿Qué necesitas?</label>
+                  <label className="block text-xs font-bold uppercase tracking-widest text-slate-500 mb-3">¿Qué necesitas?</label>
                   <div className="flex bg-slate-100 p-1 rounded-xl">
                     <button
                       type="button"
@@ -86,7 +100,7 @@ export default function AIAssistant() {
 
                 {type === 'draft' && (
                   <div>
-                    <label className="flex justify-between items-center text-xs font-bold uppercase tracking-widest text-slate-400 mb-3">
+                    <label className="flex justify-between items-center text-xs font-bold uppercase tracking-widest text-slate-500 mb-3">
                       <span>Palabras aprox.</span>
                       <span className="text-slate-900">{wordCount}</span>
                     </label>
@@ -101,7 +115,7 @@ export default function AIAssistant() {
                 )}
 
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-widest text-slate-400 mb-3">Tema o Premisa</label>
+                  <label className="block text-xs font-bold uppercase tracking-widest text-slate-500 mb-3">Tema o Premisa</label>
                   <textarea
                     rows={4}
                     value={prompt}
@@ -135,7 +149,7 @@ export default function AIAssistant() {
           <div className="lg:col-span-8">
             <div className="bg-white h-full min-h-[500px] p-8 rounded-3xl border border-slate-200 shadow-sm flex flex-col">
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-sm font-bold uppercase tracking-widest text-slate-400">Resultado de la IA</h2>
+                <h2 className="text-sm font-bold uppercase tracking-widest text-slate-500">Resultado de la IA</h2>
                 {result && (
                   <button 
                     onClick={copyToClipboard}
@@ -151,7 +165,7 @@ export default function AIAssistant() {
               
               <div className="flex-grow bg-slate-50 rounded-xl p-6 border border-slate-100 overflow-y-auto max-h-[600px] whitespace-pre-wrap text-slate-700 leading-relaxed font-serif">
                 {result ? result : (
-                  <div className="h-full flex flex-col items-center justify-center text-slate-400 text-center opacity-50">
+                  <div className="h-full flex flex-col items-center justify-center text-slate-500 text-center opacity-50">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1} stroke="currentColor" className="w-16 h-16 mb-4">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
                     </svg>

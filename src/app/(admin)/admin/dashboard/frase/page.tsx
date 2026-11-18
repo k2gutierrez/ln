@@ -1,125 +1,124 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
-import Link from 'next/link';
+import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
+import { toast } from "sonner";
+import { supabase } from "@/lib/supabase/client";
 
 export default function DailyQuoteAdmin() {
-  const [id, setId] = useState('');
-  const [text, setContent] = useState('');
+  const [id, setId] = useState("");
+  const [text, setContent] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+
+  const loadQuote = useCallback(async () => {
+    const { data, error } = await supabase
+      .from("daily_quotes")
+      .select("id, text")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error) {
+      toast.error("No se pudo cargar la frase actual.");
+    } else if (data) {
+      setId(data.id);
+      setContent(data.text ?? "");
+    }
+
+    setLoading(false);
+  }, []);
 
   useEffect(() => {
     loadQuote();
-  }, []);
-
-  async function loadQuote() {
-    try {
-      // Buscamos la frase con ID 1 (nuestra frase fija)
-      const { data, error } = await supabase
-        .from('daily_quotes')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (data) {
-        setId(data.id)
-        setContent(data.content || data.text || '');
-      }
-    } catch (err) {
-      console.error('Error cargando frase:', err);
-    } finally {
-      setLoading(false);
-    }
-  }
+  }, [loadQuote]);
 
   async function handleSave() {
+    if (!text.trim()) return;
+
     setSaving(true);
-    setMessage(null);
 
     try {
-      const { data } = await supabase
-        .from('daily_quotes')
-        .update({ is_active: false })
-        .eq('id', id)
-        .select();
+      if (id) {
+        const { error: deactivateError } = await supabase
+          .from("daily_quotes")
+          .update({ is_active: false })
+          .eq("id", id);
 
-      // Usamos .upsert para que si existe la actualice y si no, la cree
-      const { error } = await supabase
-        .from('daily_quotes')
-        .insert({ 
-          text,
-          is_active: true,
-          created_at: new Date().toISOString() 
-        });
+        if (deactivateError) throw deactivateError;
+      }
+
+      const { error } = await supabase.from("daily_quotes").insert({
+        text: text.trim(),
+        is_active: true,
+      });
 
       if (error) throw error;
 
-      setMessage({ type: 'success', text: '¡Frase actualizada correctamente!' });
-      
-      // Limpiar mensaje después de 3 segundos
-      setTimeout(() => setMessage(null), 3000);
-    } catch (err: any) {
-      setMessage({ type: 'error', text: 'Error al guardar: ' + err.message });
-    } finally {
+      toast.success("Frase del día actualizada.");
       await loadQuote();
+    } catch (error) {
+      console.error(error);
+      toast.error("No se pudo guardar la frase.");
+    } finally {
       setSaving(false);
     }
   }
 
-  if (loading) return <div className="p-20 text-center animate-pulse text-slate-500">Cargando frase actual...</div>;
+  if (loading) {
+    return (
+      <div className="animate-pulse p-20 text-center text-slate-500">
+        Cargando frase actual...
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 p-6 md:p-12">
-      <div className="max-w-2xl mx-auto">
+      <div className="mx-auto max-w-2xl">
         <header className="mb-10">
-          <Link href="/admin/dashboard" className="text-sm text-slate-500 hover:text-slate-900 transition-colors">
+          <Link
+            href="/admin/dashboard"
+            className="text-sm text-slate-500 transition-colors hover:text-slate-900"
+          >
             ← Volver al Dashboard
           </Link>
-          <h1 className="text-3xl font-bold text-slate-900 mt-2 font-serif">Frase del Día</h1>
-          <p className="text-slate-500 mt-2">Esta frase aparecerá en la página de inicio y en la biblioteca de artículos.</p>
+          <h1 className="mt-2 font-serif text-3xl font-bold text-slate-900">
+            Frase del Día
+          </h1>
+          <p className="mt-2 text-slate-500">
+            Esta frase aparece en la portada del sitio.
+          </p>
         </header>
 
-        <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm space-y-6">
+        <div className="space-y-6 rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
           <div>
-            <label className="block text-xs font-bold uppercase tracking-widest text-slate-400 mb-3">Contenido de la frase</label>
+            <label
+              htmlFor="quote-text"
+              className="mb-3 block text-xs font-bold uppercase tracking-widest text-slate-500"
+            >
+              Contenido de la frase
+            </label>
             <textarea
+              id="quote-text"
               value={text}
-              onChange={(e) => setContent(e.target.value)}
+              onChange={(event) => setContent(event.target.value)}
               rows={4}
+              maxLength={280}
               placeholder="Escribe una frase inspiradora..."
-              className="w-full text-xl font-medium border-slate-100 rounded-2xl focus:ring-slate-900 focus:border-slate-900 p-4 bg-slate-50"
+              className="w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 text-xl font-medium text-slate-900 focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900/10"
             />
+            <p className="mt-2 text-right text-xs text-slate-500">
+              {text.length}/280
+            </p>
           </div>
-
-          {/*<div>
-            <label className="block text-xs font-bold uppercase tracking-widest text-slate-400 mb-3">Autor (Opcional)</label>
-            <input
-              type="text"
-              value={author}
-              onChange={(e) => setAuthor(e.target.value)}
-              placeholder="Ej: Laura Niebla o Marco Aurelio"
-              className="w-full border-slate-100 rounded-2xl focus:ring-slate-900 focus:border-slate-900 p-4 bg-slate-50"
-            />
-          </div>*/}
-
-          {message && (
-            <div className={`p-4 rounded-2xl text-sm font-medium ${
-              message.type === 'success' ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'
-            }`}>
-              {message.text}
-            </div>
-          )}
 
           <button
             onClick={handleSave}
-            disabled={saving || !text}
-            className="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold hover:bg-slate-800 transition-all disabled:opacity-50 shadow-lg shadow-slate-200"
+            disabled={saving || !text.trim()}
+            className="w-full rounded-2xl bg-slate-900 py-4 font-bold text-white shadow-lg shadow-slate-200 transition-all hover:bg-slate-800 disabled:opacity-50"
           >
-            {saving ? 'Guardando cambios...' : 'Actualizar Frase'}
+            {saving ? "Guardando cambios..." : "Actualizar frase"}
           </button>
         </div>
       </div>

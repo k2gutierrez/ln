@@ -1,47 +1,321 @@
 @import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+@custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #fdfdfd;
+  --foreground: #0f172a;
+  --surface: #ffffff;
+  color-scheme: light;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+.dark {
+  --background: #0b0f14;
+  --foreground: #e5e7eb;
+  --surface: #131a23;
+  color-scheme: dark;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-inter), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 
-/* React Quill Alignment Classes for Public Pages */
-.ql-align-center { text-align: center; }
-.ql-align-right { text-align: right; }
-.ql-align-justify { text-align: justify; }
-
-/* Force Tailwind Prose to respect empty spaces (Enters) 
-  created by React Quill 
-*/
-.prose p:has(br:only-child),
-.prose p:empty {
-  min-height: 1.5rem;
-  margin-bottom: 1.5rem !important;
+::selection {
+  background: #0f172a;
+  color: #ffffff;
 }
 
-/* Force Tailwind Prose to respect empty spaces (Enters) */
+.dark ::selection {
+  background: #e2e8f0;
+  color: #0b0f14;
+}
+
+:focus-visible {
+  outline: 2px solid #0f172a;
+  outline-offset: 2px;
+}
+
+.dark :focus-visible {
+  outline-color: #e2e8f0;
+}
+
+/* Alineaciones que genera React Quill */
+.ql-align-center {
+  text-align: center;
+}
+
+.ql-align-right {
+  text-align: right;
+}
+
+.ql-align-justify {
+  text-align: justify;
+}
+
+/* En pantallas pequeñas el justificado genera "ríos" y huecos enormes.
+   El texto alineado a la izquierda se lee mucho mejor en un celular. */
+@media (max-width: 640px) {
+  .ql-align-justify {
+    text-align: left;
+  }
+}
+
+/* Respeta los saltos de línea que Laura deja en el editor */
 .prose p:has(br:only-child),
 .prose p:empty {
-  min-height: 1rem; /* Reducido de 1.5rem */
-  margin-bottom: 1rem !important; /* Reducido de 1.5rem */
+  min-height: 1rem;
+  margin-bottom: 1rem !important;
+}
+
+/* ------------------------------------------------------------
+   Tema oscuro
+   El sitio usa utilidades de Tailwind con colores fijos. En vez
+   de duplicar cada componente con variantes dark:, mapeamos aquí
+   las superficies y textos principales del sistema de diseño.
+   ------------------------------------------------------------ */
+.dark body {
+  background: #0b0f14;
+  color: #e5e7eb;
+}
+
+.dark .bg-\[\#FDFDFD\] {
+  background-color: #0b0f14;
+}
+
+.dark .bg-\[\#FDFDFD\]\/80 {
+  background-color: rgba(11, 15, 20, 0.82);
+}
+
+.dark .bg-white {
+  background-color: #131a23;
+}
+
+.dark .bg-white\/90 {
+  background-color: rgba(19, 26, 35, 0.92);
+}
+
+.dark .bg-slate-50 {
+  background-color: #0f151d;
+}
+
+.dark .bg-slate-50\/90 {
+  background-color: rgba(15, 21, 29, 0.92);
+}
+
+.dark .bg-slate-50\/50 {
+  background-color: rgba(15, 21, 29, 0.5);
+}
+
+.dark .bg-slate-100 {
+  background-color: #1b2430;
+}
+
+.dark .bg-slate-900 {
+  background-color: #f1f5f9;
+}
+
+.dark .bg-emerald-50 {
+  background-color: rgba(16, 185, 129, 0.14);
+}
+
+.dark .bg-emerald-100 {
+  background-color: rgba(16, 185, 129, 0.2);
+}
+
+.dark .bg-rose-50 {
+  background-color: rgba(244, 63, 94, 0.14);
+}
+
+.dark .bg-purple-100 {
+  background-color: rgba(168, 85, 247, 0.18);
+}
+
+.dark .bg-purple-50 {
+  background-color: rgba(168, 85, 247, 0.14);
+}
+
+.dark .bg-amber-50 {
+  background-color: rgba(245, 158, 11, 0.16);
+}
+
+.dark .bg-blue-50 {
+  background-color: rgba(59, 130, 246, 0.16);
+}
+
+.dark .hover\:bg-slate-50:hover {
+  background-color: #1b2430;
+}
+
+.dark .hover\:bg-slate-50\/50:hover {
+  background-color: rgba(27, 36, 48, 0.5);
+}
+
+.dark .hover\:bg-slate-800:hover {
+  background-color: #e2e8f0;
+}
+
+.dark .hover\:bg-white:hover {
+  background-color: #1b2430;
+}
+
+.dark .text-slate-900 {
+  color: #f1f5f9;
+}
+
+.dark .text-slate-800 {
+  color: #e2e8f0;
+}
+
+.dark .text-slate-700 {
+  color: #cbd5e1;
+}
+
+.dark .text-slate-600 {
+  color: #c3cedd;
+}
+
+.dark .text-slate-500 {
+  color: #a3b0c2;
+}
+
+.dark .text-slate-500 {
+  color: #8fa0b5;
+}
+
+.dark .text-slate-300 {
+  color: #6b7a8f;
+}
+
+.dark .text-slate-200 {
+  color: #4a5668;
+}
+
+.dark .text-white {
+  color: #0b0f14;
+}
+
+.dark .text-emerald-600 {
+  color: #34d399;
+}
+
+.dark .text-emerald-700 {
+  color: #6ee7b7;
+}
+
+.dark .text-rose-500 {
+  color: #fb7185;
+}
+
+.dark .text-rose-600 {
+  color: #fda4af;
+}
+
+.dark .text-purple-700 {
+  color: #c4b5fd;
+}
+
+.dark .text-amber-600 {
+  color: #fcd34d;
+}
+
+.dark .border-slate-50 {
+  border-color: #1f2a37;
+}
+
+.dark .border-slate-100 {
+  border-color: #1f2a37;
+}
+
+.dark .border-slate-200 {
+  border-color: #2a3746;
+}
+
+.dark .border-white {
+  border-color: #131a23;
+}
+
+.dark .divide-slate-100 > :not([hidden]) ~ :not([hidden]) {
+  border-color: #1f2a37;
+}
+
+.dark .placeholder\:text-slate-200::placeholder {
+  color: #3b4757;
+}
+
+.dark input,
+.dark textarea,
+.dark select {
+  color: #e5e7eb;
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: #64748b;
+}
+
+/* Prose (artículos) en oscuro */
+.dark .prose {
+  --tw-prose-body: #c3cedd;
+  --tw-prose-headings: #f1f5f9;
+  --tw-prose-lead: #cbd5e1;
+  --tw-prose-links: #93c5fd;
+  --tw-prose-bold: #f1f5f9;
+  --tw-prose-counters: #94a3b8;
+  --tw-prose-bullets: #64748b;
+  --tw-prose-hr: #1f2a37;
+  --tw-prose-quotes: #cbd5e1;
+  --tw-prose-quote-borders: #334155;
+  --tw-prose-captions: #94a3b8;
+  --tw-prose-code: #f1f5f9;
+  --tw-prose-pre-code: #e2e8f0;
+  --tw-prose-pre-bg: #0f151d;
+  --tw-prose-th-borders: #2a3746;
+  --tw-prose-td-borders: #1f2a37;
+}
+
+/* Editor Quill en el panel de administración */
+.dark .ql-toolbar.ql-snow,
+.dark .ql-container.ql-snow {
+  border-color: #2a3746;
+  background: #131a23;
+}
+
+.dark .ql-editor {
+  color: #e2e8f0;
+}
+
+.dark .ql-snow .ql-stroke {
+  stroke: #a3b0c2;
+}
+
+.dark .ql-snow .ql-fill {
+  fill: #a3b0c2;
+}
+
+.dark .ql-snow .ql-picker {
+  color: #a3b0c2;
+}
+
+.dark .ql-snow .ql-picker-options,
+.dark .ql-snow .ql-tooltip {
+  background: #131a23;
+  border-color: #2a3746;
+  color: #e2e8f0;
+}
+
+.dark .ql-snow .ql-tooltip input[type="text"] {
+  background: #0f151d;
+  border-color: #2a3746;
+  color: #e2e8f0;
+}
+
+.dark .ql-editor.ql-blank::before {
+  color: #64748b;
 }

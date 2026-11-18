@@ -2,14 +2,17 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
+import { toast } from 'sonner';
+import { supabase } from '@/lib/supabase/client';
 
 export default function AdminDashboard() {
   const router = useRouter();
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
+    toast.success('Sesión cerrada.');
     router.push('/admin/login');
+    router.refresh();
   };
 
   return (
@@ -26,12 +29,14 @@ export default function AdminDashboard() {
               ¿Qué te gustaría compartir con tu audiencia hoy?
             </p>
           </div>
-          <button 
-            onClick={handleLogout}
-            className="text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors px-4 py-2 bg-white border border-slate-200 rounded-lg shadow-sm hover:shadow"
-          >
-            Cerrar Sesión
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleLogout}
+              className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-500 shadow-sm transition-colors hover:text-slate-900 hover:shadow"
+            >
+              Cerrar sesión
+            </button>
+          </div>
         </header>
 
         {/* --- Tarjetas de Acciones Rápidas (Grid) --- */}
